@@ -1,34 +1,25 @@
 import 'package:flutter/material.dart';
+import 'theme/app_theme.dart';
+import 'screens/home_screen.dart';
 
 void main() {
   runApp(const MainApp());
 }
 
-class MainApp extends StatefulWidget {
+class MainApp extends StatelessWidget {
   const MainApp({super.key});
 
   @override
-  State<MainApp> createState() => _MainAppState();
-}
-
-class _MainAppState extends State<MainApp> {
-  @override
   Widget build(BuildContext context) {
-    return  MaterialApp(
-      home: Scaffold(
-        appBar:  AppBar(
-          title: Text('Project 1',style: TextStyle(
-            color: Color.fromARGB(255, 48, 139, 48),
-            fontStyle: FontStyle.italic,
-            fontSize: 22,
-            decoration: TextDecoration.underline,
-            decorationColor: Color.fromARGB(255, 48, 139, 48),
-          ),),
-          centerTitle: true,
-          backgroundColor: Color.fromARGB(255, 0, 0, 0),
-        )
-        
-      ),
+    return MaterialApp(
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      // Follows the device's setting until you wire up a manual toggle.
+      // TODO: make MainApp a StatefulWidget again once you add a manual
+      // light/dark switch in the drawer — you'll need to hold a ThemeMode
+      // variable here and pass a way to change it down to AppDrawer.
+      themeMode: ThemeMode.system,
+      home: const HomeScreen(),
     );
   }
 }
