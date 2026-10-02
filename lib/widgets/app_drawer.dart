@@ -27,6 +27,17 @@ class AppDrawer extends StatelessWidget {
             onTap: () => Navigator.pop(context),
           ),
           ListTile(
+            leading: const Icon(Icons.archive),
+            title: const Text('Archive'),
+            onTap: () { 
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ArchivePage()),
+              );
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.settings),
             title: const Text('Settings'),
             onTap: () {
@@ -37,7 +48,6 @@ class AppDrawer extends StatelessWidget {
               );
             },
           ),
-          // TODO: add "Bin" (archived items) ListTile here
           // TODO: add Theme (light/dark) toggle ListTile here
           // TODO: add "Exit app" ListTile here
         ],

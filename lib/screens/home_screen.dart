@@ -5,7 +5,9 @@ import '../widgets/profile_menu.dart';
 import '../widgets/nav_button.dart';
 import '../models/item.dart';
 import '../services/database_service.dart';
-import 'package:uuid/uuid.dart';
+import 'edit_screen.dart';
+import 'package:intl/intl.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,14 +18,37 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<Item> _items = [];
+  String _searchQuery = '';
 
+  @override
   void initState() {
     super.initState();
     _loadItems();
   }
 
+  Future<void> _confirmDelete(Item item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete item?'),
+        content: Text('"${item.title}" will be permanently deleted.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await DatabaseService.instance.deleteItem(item.id);
+      _loadItems();
+    }
+  }
+
   Future<void> _loadItems() async {
-    final items = await DatabaseService.instance.getItems(archived: false);
+    final items = await DatabaseService.instance.getItems(
+      archived: false,
+      searchQuery: _searchQuery,
+    );
     setState(() {
       _items = items;
     });
@@ -32,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: _buildAppBar(context),
       drawer: const AppDrawer(),
       body: _buildBody(context),
@@ -49,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
       centerTitle: true,
       backgroundColor: colorScheme.primary,
       title: Text(
-        'Project 1',
+        'Project 1', // App Name
         style: TextStyle(
           color: colorScheme.onPrimary,
           fontStyle: FontStyle.italic,
@@ -67,15 +93,13 @@ class _HomeScreenState extends State<HomeScreen> {
   // ---------------------------------------------------------------------
 
   Widget _buildBody(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      color: Theme.of(context).colorScheme.surface,
+    return Padding(
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildSearchField(context),
-          const SizedBox(height: 10),
+          const SizedBox(height: 15),
           _buildSectionLabel(context),
           Expanded(child: _buildItemList(context)),
           const SizedBox(height: 12),
@@ -95,7 +119,10 @@ class _HomeScreenState extends State<HomeScreen> {
         prefixIcon: Icon(Icons.search, color: colorScheme.primary),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      // TODO: onChanged -> filter _buildItemList's data by title/content
+      onChanged: (value) {
+        _searchQuery = value;
+        _loadItems();
+      },
     );
   }
 
@@ -120,9 +147,35 @@ class _HomeScreenState extends State<HomeScreen> {
         final item = _items[index];
         return ListTile(
           title: Text(item.title),
-          subtitle: Text(item.type),
-        // TODO: tapping this should eventually open your Data View screen
-      );
+          subtitle: Text(
+            '${item.type} • Created ${DateFormat('MMM d, yyyy').format(item.createdAt)}',
+          ),
+          trailing: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '• Updated ${DateFormat('MMM d').format(item.updatedAt)}',
+                
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              InkWell(
+                onTap: () => _confirmDelete(item),
+                child: const Padding(
+                  padding: EdgeInsets.only(top: 4),
+                  child: Icon(Icons.delete, size: 20),
+                ),
+              ),
+            ],
+          ),
+          onTap: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => EditScreen(existingItem: item)),
+            );
+            if (result == true) _loadItems();
+          },
+        );
     },
   );
   }
@@ -135,21 +188,14 @@ class _HomeScreenState extends State<HomeScreen> {
       child: FloatingActionButton(
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
-        onPressed: ()async{
-          final now = DateTime.now();
-          final testItem = Item(
-            id: const Uuid().v4(),
-            type: 'note',
-            title: 'Test item ${_items.length + 1}',
-            content: 'Hello from the FAB',
-            tags: [],
-            createdAt: now,
-            updatedAt: now,
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const EditScreen()),
           );
-          await DatabaseService.instance.insertItem(testItem);
-          _loadItems();
+          if (result == true) _loadItems();
         },
-        child: const Icon(Icons.navigation),
+        child: const Icon(Icons.edit),
       ),
     );
   }
