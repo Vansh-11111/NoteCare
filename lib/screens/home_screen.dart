@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'archive_screen.dart';
 import '../data.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/profile_menu.dart';
@@ -10,7 +11,14 @@ import 'package:intl/intl.dart';
 
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final ThemeMode themeMode;
+  final VoidCallback onToggleTheme; 
+  
+  const HomeScreen({
+    super.key,
+    required this.themeMode,
+    required this.onToggleTheme,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -18,7 +26,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<Item> _items = [];
+  List<String> allTags = [];
   String _searchQuery = '';
+  String? selectedTag;
 
   @override
   void initState() {
@@ -44,13 +54,34 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _archive(Item item) async {
+    await DatabaseService.instance.setArchived(item.id, true);
+    _loadItems();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Archived "${item.title}"')),
+      );
+    }
+  }
+
+  Future<void> _openArchive() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ArchiveScreen()),
+    );
+    _loadItems(); 
+  }
+
   Future<void> _loadItems() async {
     final items = await DatabaseService.instance.getItems(
       archived: false,
       searchQuery: _searchQuery,
+      tag: selectedTag,
     );
+    final tags = await DatabaseService.instance.getAllTags();
     setState(() {
       _items = items;
+      allTags = tags;
     });
   }
 
@@ -59,7 +90,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: _buildAppBar(context),
-      drawer: const AppDrawer(),
+      drawer: AppDrawer(
+        onArchiveTap: _openArchive,
+        themeMode: widget.themeMode,
+        onToggleTheme: widget.onToggleTheme,
+        ),
       body: _buildBody(context),
     );
   }
@@ -92,6 +127,45 @@ class _HomeScreenState extends State<HomeScreen> {
   // Body
   // ---------------------------------------------------------------------
 
+  Widget _buildTagFilter(BuildContext context) {
+    if (allTags.isEmpty) return const SizedBox.shrink();
+
+    return SizedBox(
+      height: 40,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              label: const Text('All'),
+              selected: selectedTag == null,
+              onSelected: (_) {
+                setState(() => selectedTag = null);
+                _loadItems();
+              },
+            ),
+          ),
+          ...allTags.map((tag) {
+            final selected = selectedTag == tag;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: Text(tag),
+                selected: selected,
+                onSelected: (_) {
+                  setState(() => selectedTag = selected ? null : tag);
+                  _loadItems();
+                },
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+
   Widget _buildBody(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(12),
@@ -100,6 +174,8 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           _buildSearchField(context),
           const SizedBox(height: 15),
+          _buildTagFilter(context),
+          const SizedBox(height: 15,),
           _buildSectionLabel(context),
           Expanded(child: _buildItemList(context)),
           const SizedBox(height: 12),
@@ -159,13 +235,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
-              InkWell(
-                onTap: () => _confirmDelete(item),
-                child: const Padding(
-                  padding: EdgeInsets.only(top: 4),
-                  child: Icon(Icons.delete, size: 20),
-                ),
-              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  InkWell(
+                    onTap: () => _archive(item),
+                    child: const Padding(
+                      padding: EdgeInsets.all(4),
+                      child: Icon(Icons.archive,size: 20),
+                    )
+                  ),
+                  InkWell(
+                    onTap: () => _confirmDelete(item),
+                    child: const Padding(
+                      padding: EdgeInsets.only(top: 4),
+                      child: Icon(Icons.delete, size: 20),
+                    ),
+                  ), 
+                ],
+              )
             ],
           ),
           onTap: () async {

@@ -84,11 +84,7 @@ class _EditScreenState extends State<EditScreen> {
 
     if (mounted) Navigator.pop(context, true);
   }
-    
-    
-      
   
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

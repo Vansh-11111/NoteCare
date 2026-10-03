@@ -3,23 +3,36 @@ import 'theme/app_theme.dart';
 import 'screens/home_screen.dart';
 
 void main() {
-  runApp(const MainApp());
+  runApp( MainApp());
 }
 
-class MainApp extends StatelessWidget {
+class MainApp extends StatefulWidget {
   const MainApp({super.key});
+
+  @override
+  State<MainApp> createState() => _MainAppState();
+  
+}
+
+  class _MainAppState extends State<MainApp> {
+    ThemeMode _themeMode = ThemeMode.light;
+  
+    void _toggleTheme() {
+      setState(() {
+        _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+      });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      // Follows the device's setting until you wire up a manual toggle.
-      // TODO: make MainApp a StatefulWidget again once you add a manual
-      // light/dark switch in the drawer — you'll need to hold a ThemeMode
-      // variable here and pass a way to change it down to AppDrawer.
-      themeMode: ThemeMode.system,
-      home: const HomeScreen(),
+      themeMode: _themeMode,
+      home: HomeScreen(
+        themeMode: _themeMode,
+        onToggleTheme: _toggleTheme,
+      ),
     );
   }
 }

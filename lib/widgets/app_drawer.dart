@@ -1,10 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:project_1/screens/archive_screen.dart';
 import '../profile.dart';
 
 // The hamburger-menu drawer. Separated out so adding Bin/Theme/Exit later
 // only touches this one file, not the whole HomeScreen.
 class AppDrawer extends StatelessWidget {
-  const AppDrawer({super.key});
+  final VoidCallback onArchiveTap;
+  final ThemeMode themeMode;
+  final VoidCallback onToggleTheme;
+
+  const AppDrawer({
+    super.key,
+    required this.onArchiveTap,
+    required this.themeMode,
+    required this.onToggleTheme,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,13 +39,16 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.archive),
             title: const Text('Archive'),
-            onTap: () { 
+            onTap: (){
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ArchivePage()),
-              );
+              onArchiveTap();
             },
+          ),
+          SwitchListTile(
+            secondary: Icon(themeMode == ThemeMode.dark ? Icons.dark_mode : Icons.light_mode), 
+            title: Text(themeMode == ThemeMode.dark ? 'Dark mode' : 'Light mode'),
+            value: themeMode == ThemeMode.dark,
+            onChanged: (_) => onToggleTheme(),
           ),
           ListTile(
             leading: const Icon(Icons.settings),
@@ -48,7 +61,6 @@ class AppDrawer extends StatelessWidget {
               );
             },
           ),
-          // TODO: add Theme (light/dark) toggle ListTile here
           // TODO: add "Exit app" ListTile here
         ],
       ),
