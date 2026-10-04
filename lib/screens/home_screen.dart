@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:project_1/services/supabase_service.dart';
 import 'archive_screen.dart';
-import '../data.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/profile_menu.dart';
-import '../widgets/nav_button.dart';
 import '../models/item.dart';
-import '../services/database_service.dart';
+import '../services/supabase_service.dart';
 import 'edit_screen.dart';
 import 'package:intl/intl.dart';
 
@@ -49,13 +48,13 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
     if (confirmed == true) {
-      await DatabaseService.instance.deleteItem(item.id);
+      await SupabaseService.instance.deleteItem(item.id);
       _loadItems();
     }
   }
 
   Future<void> _archive(Item item) async {
-    await DatabaseService.instance.setArchived(item.id, true);
+    await SupabaseService.instance.setArchived(item.id, true);
     _loadItems();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -73,12 +72,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadItems() async {
-    final items = await DatabaseService.instance.getItems(
+    final items = await SupabaseService.instance.getItems(
       archived: false,
       searchQuery: _searchQuery,
       tag: selectedTag,
     );
-    final tags = await DatabaseService.instance.getAllTags();
+    final tags = await SupabaseService.instance.getAllTags();
     setState(() {
       _items = items;
       allTags = tags;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:project_1/screens/archive_screen.dart';
 import '../profile.dart';
+import 'package:flutter/services.dart';
 
 // The hamburger-menu drawer. Separated out so adding Bin/Theme/Exit later
 // only touches this one file, not the whole HomeScreen.
@@ -61,7 +61,25 @@ class AppDrawer extends StatelessWidget {
               );
             },
           ),
-          // TODO: add "Exit app" ListTile here
+          ListTile(
+            leading: const Icon(Icons.exit_to_app),
+            title: const Text('Exit App'),
+            onTap: () async {
+              Navigator.pop(context);
+              /*final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text('Exit app?'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                    TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Exit')),
+                  ],
+                ),
+              );
+              if (confirmed == true)*/ 
+              SystemNavigator.pop();
+            },
+          ),
         ],
       ),
     );

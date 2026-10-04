@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/item.dart';
-import '../services/database_service.dart';
+import '../services/supabase_service.dart';
  
 class ArchiveScreen extends StatefulWidget {
   const ArchiveScreen({super.key});
@@ -20,14 +20,14 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
   }
  
   Future<void> _loadItems() async {
-    final items = await DatabaseService.instance.getItems(archived: true);
+    final items = await SupabaseService.instance.getItems(archived: true);
     setState(() {
       _items = items;
     });
   }
  
   Future<void> _restore(Item item) async {
-    await DatabaseService.instance.setArchived(item.id, false);
+    await SupabaseService.instance.setArchived(item.id, false);
     _loadItems();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -49,7 +49,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
       ),
     );
     if (confirmed == true) {
-      await DatabaseService.instance.deleteItem(item.id);
+      await SupabaseService.instance.deleteItem(item.id);
       _loadItems();
     }
   }

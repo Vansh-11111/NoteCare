@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../profile.dart';
 
 // The person-icon menu in the AppBar. Kept separate from HomeScreen so the
@@ -30,7 +31,7 @@ class ProfileMenu extends StatelessWidget {
         );
         break;
       case 'logout':
-        // TODO(stage2): wire up real logout once auth exists
+        Supabase.instance.client.auth.signOut();
         break;
     }
   }

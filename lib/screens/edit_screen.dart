@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/item.dart';
-import '../services/database_service.dart';
+import '../services/supabase_service.dart';
 import 'package:image_picker/image_picker.dart';
 
 class EditScreen extends StatefulWidget {
@@ -68,7 +68,7 @@ class _EditScreenState extends State<EditScreen> {
         tags: tags,
         updatedAt: now,
       );
-      await DatabaseService.instance.updateItem(updated);
+      await SupabaseService.instance.updateItem(updated);
     } else {
       final newItem = Item(
         id: const Uuid().v4(),
@@ -79,7 +79,7 @@ class _EditScreenState extends State<EditScreen> {
         createdAt: now,
         updatedAt: now,
       );
-      await DatabaseService.instance.insertItem(newItem);
+      await SupabaseService.instance.insertItem(newItem);
     }
 
     if (mounted) Navigator.pop(context, true);
