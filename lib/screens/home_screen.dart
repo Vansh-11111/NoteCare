@@ -28,6 +28,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> allTags = [];
   String _searchQuery = '';
   String? selectedTag;
+  bool isLoading = true;
+  String? errorMessage;
 
   @override
   void initState() {
@@ -72,16 +74,28 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadItems() async {
-    final items = await SupabaseService.instance.getItems(
-      archived: false,
-      searchQuery: _searchQuery,
-      tag: selectedTag,
-    );
-    final tags = await SupabaseService.instance.getAllTags();
     setState(() {
-      _items = items;
-      allTags = tags;
+      isLoading = true;
+      errorMessage = null;
     });
+    try {
+      final items = await SupabaseService.instance.getItems(
+        archived: false,
+        searchQuery: _searchQuery,
+        tag: selectedTag,
+      );
+      final tags = await SupabaseService.instance.getAllTags();
+      setState(() {
+        _items = items;
+        allTags = tags;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Could not load your items. Check your connection and try again.';
+        isLoading = false;
+      });
+    }
   }
 
   @override
@@ -213,6 +227,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildItemList(BuildContext context) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(errorMessage!),
+            const SizedBox(height: 12),
+            FilledButton(onPressed: _loadItems, child: const Text('Retry')),
+          ],
+        ),
+      );
+    }
     if (_items.isEmpty) {
       return const Center(child: Text('Nothing saved yet'));
     }

@@ -14,6 +14,7 @@ class EditScreen extends StatefulWidget {
  
 class _EditScreenState extends State<EditScreen> {
   final _formKey = GlobalKey<FormState>();
+  bool isSaving = false;
 
   late String _type;
   late TextEditingController _titleController;
@@ -52,6 +53,8 @@ class _EditScreenState extends State<EditScreen> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+
+    setState(() => isSaving = true);
  
     final tags = _tagsController.text
         .split(',')
@@ -61,28 +64,36 @@ class _EditScreenState extends State<EditScreen> {
  
     final now = DateTime.now();
     
-    if (_isEditing) {
-      final updated = widget.existingItem!.copyWith(
-        title: _titleController.text.trim(),
-        content: _contentController.text.trim(),
-        tags: tags,
-        updatedAt: now,
-      );
-      await SupabaseService.instance.updateItem(updated);
-    } else {
-      final newItem = Item(
-        id: const Uuid().v4(),
-        type: _type,
-        title: _titleController.text.trim(),
-        content: _contentController.text.trim(),
-        tags: tags,
-        createdAt: now,
-        updatedAt: now,
-      );
-      await SupabaseService.instance.insertItem(newItem);
+    try{
+      if (_isEditing) {
+        final updated = widget.existingItem!.copyWith(
+          title: _titleController.text.trim(),
+          content: _contentController.text.trim(),
+          tags: tags,
+          updatedAt: now,
+        );
+        await SupabaseService.instance.updateItem(updated);
+      } else {
+        final newItem = Item(
+          id: const Uuid().v4(),
+          type: _type,
+          title: _titleController.text.trim(),
+          content: _contentController.text.trim(),
+          tags: tags,
+          createdAt: now,
+          updatedAt: now,
+        );
+        await SupabaseService.instance.insertItem(newItem);
+      }
+      if (mounted) Navigator.pop(context, true);
+    } catch(e){
+      if (mounted){
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not saveCheck your connection and try again.')),
+        );
+        setState(() => isSaving = false);
+      }
     }
-
-    if (mounted) Navigator.pop(context, true);
   }
   
   @override
@@ -91,7 +102,7 @@ class _EditScreenState extends State<EditScreen> {
       appBar: AppBar(
         title: Text(_isEditing ? 'Edit item' : 'New item'),
         actions: [
-          IconButton(icon: const Icon(Icons.check), onPressed: _save, tooltip: 'Save'),
+          IconButton(icon: const Icon(Icons.check), onPressed: isSaving ? null : _save, tooltip: 'Save'),
         ],
       ),
       body: Padding(
@@ -148,7 +159,12 @@ class _EditScreenState extends State<EditScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              FilledButton(onPressed: _save, child: const Text('Save')),
+              FilledButton(
+                onPressed: isSaving ? null : _save,
+                child: isSaving
+                    ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Text('Save'),
+              ),
             ],
           ),
         ),

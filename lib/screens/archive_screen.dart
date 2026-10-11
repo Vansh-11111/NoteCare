@@ -12,6 +12,8 @@ class ArchiveScreen extends StatefulWidget {
  
 class _ArchiveScreenState extends State<ArchiveScreen> {
   List<Item> _items = [];
+  bool isLoading = true;
+  String? errorMessage;
  
   @override
   void initState() {
@@ -20,10 +22,22 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
   }
  
   Future<void> _loadItems() async {
-    final items = await SupabaseService.instance.getItems(archived: true);
     setState(() {
-      _items = items;
+      isLoading = true;
+      errorMessage = null;
     });
+    try {
+      final items = await SupabaseService.instance.getItems(archived: true);
+      setState(() {
+        _items = items;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Could not load the archive. Check your connection and try again.';
+        isLoading = false;
+      });
+    }
   }
  
   Future<void> _restore(Item item) async {
@@ -58,42 +72,55 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Archive')),
-      body: _items.isEmpty
-          ? const Center(child: Text('Archive is empty'))
-          : ListView.builder(
-              itemCount: _items.length,
-              itemBuilder: (context, index) {
-                final item = _items[index];
-                return ListTile(
-                  title: Text(item.title),
-                  subtitle: Text(
-                    '${item.type} • Updated ${DateFormat('MMM d').format(item.updatedAt)}',
-                  ),
-                  // Using InkWell + Padding instead of IconButton here, same
-                  // fix as home_screen.dart's trailing row — IconButton's
-                  // forced 48x48 minimum tap target overflows this tight space.
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      InkWell(
-                        onTap: () => _restore(item),
-                        child: const Padding(
-                          padding: EdgeInsets.all(6),
-                          child: Icon(Icons.unarchive, size: 22),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : errorMessage != null
+            ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(errorMessage!),
+                  const SizedBox(height: 12),
+                  FilledButton(onPressed: _loadItems, child: const Text('Retry')),
+                ],
+              ),
+            ) 
+              : _items.isEmpty
+                ? const Center(child: Text('Archive is empty'))
+                : ListView.builder(
+                    itemCount: _items.length,
+                    itemBuilder: (context, index) {
+                      final item = _items[index];
+                      return ListTile(
+                        title: Text(item.title),
+                        subtitle: Text(
+                          '${item.type} • Updated ${DateFormat('MMM d').format(item.updatedAt)}',
                         ),
-                      ),
-                      InkWell(
-                        onTap: () => _confirmDelete(item),
-                        child: const Padding(
-                          padding: EdgeInsets.all(6),
-                          child: Icon(Icons.delete, size: 20),
+                        // Using InkWell + Padding instead of IconButton here, same
+                        // fix as home_screen.dart's trailing row — IconButton's
+                        // forced 48x48 minimum tap target overflows this tight space.
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            InkWell(
+                              onTap: () => _restore(item),
+                              child: const Padding(
+                                padding: EdgeInsets.all(6),
+                                child: Icon(Icons.unarchive, size: 22),
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () => _confirmDelete(item),
+                              child: const Padding(
+                                padding: EdgeInsets.all(6),
+                                child: Icon(Icons.delete, size: 20),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                );
-              },
-            ),
     );
   }
 }
