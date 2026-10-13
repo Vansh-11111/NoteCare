@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../profile.dart';
+import '../screens/profile_screen.dart';
 
 // The person-icon menu in the AppBar. Kept separate from HomeScreen so the
 // profile/logout logic doesn't clutter the main screen's build method.

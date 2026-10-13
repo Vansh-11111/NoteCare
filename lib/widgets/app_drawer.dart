@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../profile.dart';
+import '../screens/profile_screen.dart';
 import 'package:flutter/services.dart';
 
 // The hamburger-menu drawer. Separated out so adding Bin/Theme/Exit later
@@ -50,7 +50,7 @@ class AppDrawer extends StatelessWidget {
             value: themeMode == ThemeMode.dark,
             onChanged: (_) => onToggleTheme(),
           ),
-          ListTile(
+          /*ListTile(
             leading: const Icon(Icons.settings),
             title: const Text('Settings'),
             onTap: () {
@@ -60,7 +60,7 @@ class AppDrawer extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const SettingsPage()),
               );
             },
-          ),
+          ),*/
           ListTile(
             leading: const Icon(Icons.exit_to_app),
             title: const Text('Exit App'),

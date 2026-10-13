@@ -58,7 +58,12 @@ class ProfilePage extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
  
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(
+        iconTheme: IconThemeData(color: colorScheme.onPrimary),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
+        title: const Text('Profile')
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

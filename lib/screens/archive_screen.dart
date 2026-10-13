@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/item.dart';
 import '../services/supabase_service.dart';
+import '../widgets/item_card.dart';
  
 class ArchiveScreen extends StatefulWidget {
   const ArchiveScreen({super.key});
@@ -70,8 +71,14 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
  
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Archive')),
+      appBar: AppBar(
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        title: const Text('Archive')
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : errorMessage != null
@@ -91,7 +98,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                     itemCount: _items.length,
                     itemBuilder: (context, index) {
                       final item = _items[index];
-                      return ListTile(
+                      /*return ListTile(
                         title: Text(item.title),
                         subtitle: Text(
                           '${item.type} • Updated ${DateFormat('MMM d').format(item.updatedAt)}',
@@ -118,6 +125,14 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                             ),
                           ],
                         ),
+                      );*/
+                      return ItemCard(
+                        item: item,
+                        onTap: () {},
+                        onArchive: () => _restore(item),
+                        onDelete: () => _confirmDelete(item),
+                        archiveIcon: Icons.unarchive,
+                        archiveTooltip: 'Restore',
                       );
                     },
                   ),

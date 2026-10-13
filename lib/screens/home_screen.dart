@@ -4,9 +4,8 @@ import 'archive_screen.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/profile_menu.dart';
 import '../models/item.dart';
-import '../services/supabase_service.dart';
 import 'edit_screen.dart';
-import 'package:intl/intl.dart';
+import '../widgets/item_card.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -34,10 +33,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadItems();
+    loadItems();
   }
 
-  Future<void> _confirmDelete(Item item) async {
+  Future<void> confirmDelete(Item item) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -51,13 +50,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     if (confirmed == true) {
       await SupabaseService.instance.deleteItem(item.id);
-      _loadItems();
+      loadItems();
     }
   }
 
-  Future<void> _archive(Item item) async {
+  Future<void> archive(Item item) async {
     await SupabaseService.instance.setArchived(item.id, true);
-    _loadItems();
+    loadItems();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Archived "${item.title}"')),
@@ -65,15 +64,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _openArchive() async {
+  Future<void> openArchive() async {
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const ArchiveScreen()),
     );
-    _loadItems(); 
+    loadItems(); 
   }
 
-  Future<void> _loadItems() async {
+  Future<void> loadItems() async {
     setState(() {
       isLoading = true;
       errorMessage = null;
@@ -102,43 +101,37 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: _buildAppBar(context),
-      drawer: AppDrawer(
-        onArchiveTap: _openArchive,
+      drawer: AppDrawer(       
+        onArchiveTap: openArchive,
         themeMode: widget.themeMode,
         onToggleTheme: widget.onToggleTheme,
-        ),
+      ),
+      appBar: buildAppBar(context),
       body: _buildBody(context),
     );
   }
 
-  // ---------------------------------------------------------------------
   // AppBar
-  // ---------------------------------------------------------------------
 
-  AppBar _buildAppBar(BuildContext context) {
+  AppBar buildAppBar(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return AppBar(
       centerTitle: true,
+      iconTheme: IconThemeData(color: colorScheme.onPrimary),
       backgroundColor: colorScheme.primary,
       title: Text(
-        'Project 1', // App Name
+        'NoteCare',
         style: TextStyle(
           color: colorScheme.onPrimary,
-          fontStyle: FontStyle.italic,
+          fontWeight: FontWeight.w600,
           fontSize: 22,
-          decoration: TextDecoration.underline,
-          decorationColor: colorScheme.onPrimary,
-        ),
+          ),
       ),
       actions: const [ProfileMenu()],
     );
   }
-
-  // ---------------------------------------------------------------------
   // Body
-  // ---------------------------------------------------------------------
 
   Widget _buildTagFilter(BuildContext context) {
     if (allTags.isEmpty) return const SizedBox.shrink();
@@ -155,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
               selected: selectedTag == null,
               onSelected: (_) {
                 setState(() => selectedTag = null);
-                _loadItems();
+                loadItems();
               },
             ),
           ),
@@ -168,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 selected: selected,
                 onSelected: (_) {
                   setState(() => selectedTag = selected ? null : tag);
-                  _loadItems();
+                  loadItems();
                 },
               ),
             );
@@ -177,7 +170,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
 
   Widget _buildBody(BuildContext context) {
     return Padding(
@@ -192,7 +184,8 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildSectionLabel(context),
           Expanded(child: _buildItemList(context)),
           const SizedBox(height: 12),
-          _buildAddButton(context),
+          _buildAddButton(context),         
+          const SizedBox(height: 15),
         ],
       ),
     );
@@ -210,7 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       onChanged: (value) {
         _searchQuery = value;
-        _loadItems();
+        loadItems();
       },
     );
   }
@@ -237,63 +230,82 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Text(errorMessage!),
             const SizedBox(height: 12),
-            FilledButton(onPressed: _loadItems, child: const Text('Retry')),
+            FilledButton(onPressed: loadItems, child: const Text('Retry')),
           ],
         ),
       );
     }
     if (_items.isEmpty) {
-      return const Center(child: Text('Nothing saved yet'));
+      return const AnimatedSwitcher(
+        duration: Duration(milliseconds: 250),
+        child: Center(
+          key: ValueKey('empty'),
+          child: Text('Nothing saved yet'),
+        ),
+      );
     }
-    return ListView.builder(
-      itemCount: _items.length,
-      itemBuilder: (context, index) {
-        final item = _items[index];
-        return ListTile(
-          title: Text(item.title),
-          subtitle: Text(
-            '${item.type} • Created ${DateFormat('MMM d, yyyy').format(item.createdAt)}',
-          ),
-          trailing: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '• Updated ${DateFormat('MMM d').format(item.updatedAt)}',
-                
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  InkWell(
-                    onTap: () => _archive(item),
-                    child: const Padding(
-                      padding: EdgeInsets.all(4),
-                      child: Icon(Icons.archive,size: 20),
-                    )
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      child: ListView.builder(
+        key: ValueKey('${_searchQuery}_${selectedTag ?? 'all'}_${_items.length}'),
+        itemCount: _items.length,
+        padding: const EdgeInsets.only(top: 2),
+        itemBuilder: (context, index) {
+          final item = _items[index];
+          return TweenAnimationBuilder<double>(
+            key: ValueKey(item.id),
+            duration: Duration(milliseconds: 260 + (index * 45).clamp(0, 220).toInt()),
+            curve: Curves.easeOutCubic,
+            tween: Tween(begin: 0, end: 1),
+            builder: (context, value, child) {
+              return Opacity(
+                opacity: value,
+                child: Transform.translate(
+                  offset: Offset(0, 18 * (1 - value)),
+                  child: child,
+                ),
+              );
+            },
+            child: ItemCard(
+              item: item,
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    transitionDuration: const Duration(milliseconds: 280),
+                    reverseTransitionDuration: const Duration(milliseconds: 220),
+                    pageBuilder: (_, animation, secondaryAnimation) =>
+                        EditScreen(existingItem: item),
+                    transitionsBuilder: (_, animation, secondaryAnimation, child) {
+                      final curved = CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      );
+                      return FadeTransition(
+                        opacity: curved,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0.04, 0),
+                            end: Offset.zero,
+                          ).animate(curved),
+                          child: child,
+                        ),
+                      );
+                    },
                   ),
-                  InkWell(
-                    onTap: () => _confirmDelete(item),
-                    child: const Padding(
-                      padding: EdgeInsets.only(top: 4),
-                      child: Icon(Icons.delete, size: 20),
-                    ),
-                  ), 
-                ],
-              )
-            ],
-          ),
-          onTap: () async {
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => EditScreen(existingItem: item)),
-            );
-            if (result == true) _loadItems();
-          },
-        );
-    },
-  );
+                );
+                if (result == true) loadItems();
+              },
+              onArchive: () => archive(item),
+              onDelete: () => confirmDelete(item),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildAddButton(BuildContext context) {
@@ -301,17 +313,43 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Align(
       alignment: Alignment.centerRight,
-      child: FloatingActionButton(
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const EditScreen()),
-          );
-          if (result == true) _loadItems();
+      child: TweenAnimationBuilder<double>(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutBack,
+        tween: Tween(begin: 0.82, end: 1),
+        builder: (context, scale, child) {
+          return Transform.scale(scale: scale, child: child);
         },
-        child: const Icon(Icons.edit),
+        child: FloatingActionButton(
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+          onPressed: () async {
+            final result = await Navigator.push(
+              context,
+              PageRouteBuilder(
+                transitionDuration: const Duration(milliseconds: 280),
+                reverseTransitionDuration: const Duration(milliseconds: 220),
+                pageBuilder: (_, animation, secondaryAnimation) =>
+                    const EditScreen(),
+                transitionsBuilder: (_, animation, secondaryAnimation, child) {
+                  final curved = CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  );
+                  return FadeTransition(
+                    opacity: curved,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.96, end: 1).animate(curved),
+                      child: child,
+                    ),
+                  );
+                },
+              ),
+            );
+            if (result == true) loadItems();
+          },
+          child: const Icon(Icons.edit),
+        ),
       ),
     );
   }
