@@ -1,3 +1,3 @@
-# project_1
+# NoteCare
 
 A new Flutter project.
